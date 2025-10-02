@@ -1,33 +1,646 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4A7C59">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/Y0G8B7Jy/logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/Y0G8B7Jy/logo.png">
+    <title>توقعات الطقس - SaFe Safari</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        :root {
+            --color-beige: #dfb995;
+            --color-dark-gray: #4A4A4A;
+            --color-gold: #f8ae0f;
+            --color-green: #4A7C59;
+            --color-green-dark: #3d6449;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        nav {
+            backdrop-filter: blur(10px);
+            background: rgba(232, 221, 211, 0.95);
+        }
+
+        .spinner {
+            border: 3px solid var(--color-beige);
+            border-top: 3px solid var(--color-green);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(74, 124, 89, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 1rem;
+        }
+
+        #map {
+            border: 3px solid var(--color-gold);
+            border-radius: 12px;
+            height: 400px;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-green), var(--color-green-dark));
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-8">
+                    <a href="index.html" class="flex items-center gap-2">
+                        <img src="https://i.ibb.co/d4ftYF1f/Whats-App-Image-2025-09-25-at-08-11-18-0042ce8a.jpg"
+                            alt="Logo" class="w-12 h-12 object-contain rounded-full">
+                        <span class="text-2xl font-bold" style="color: var(--color-green);">SaFe Safari</span>
+                    </a>
+                    <div class="hidden md:flex gap-6">
+                        <a href="index.html" class="font-semibold transition hover:text-green-600"
+                            style="color: var(--color-dark-gray);">الرئيسية</a>
+                        <a href="weather.html" class="font-semibold transition hover:text-green-600"
+                            style="color: var(--color-green);">توقعات الطقس</a>
+                        <a href="trips.html" class="font-semibold transition hover:text-green-600"
+                            style="color: var(--color-dark-gray);">الرحلات</a>
+                        <a href="premium.html" class="font-semibold transition hover:text-green-600"
+                            style="color: var(--color-dark-gray);">بريميوم</a>
+                        <a href="contact.html" class="font-semibold transition hover:text-green-600"
+                            style="color: var(--color-dark-gray);">اتصل بنا</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div id="userInfo" class="hidden items-center gap-3">
+                        <img id="userPhoto" class="w-10 h-10 rounded-full border-2"
+                            style="border-color: var(--color-gold);" alt="User">
+                        <span id="userName" class="font-semibold" style="color: var(--color-dark-gray);"></span>
+                        <button onclick="signOut()"
+                            class="px-4 py-2 rounded-lg transition text-red-600 hover:bg-red-50">تسجيل خروج</button>
+                    </div>
+                    <button id="signInBtn" onclick="signInWithGoogle()"
+                        class="px-6 py-2 btn-primary text-white font-bold rounded-lg hover:shadow-lg transition">تسجيل دخول</button>
+                    <button class="md:hidden text-2xl" style="color: var(--color-dark-gray);"
+                        onclick="toggleMobileMenu()">☰</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed top-20 left-0 right-0 bg-white shadow-lg z-40 md:hidden">
+        <div class="container mx-auto px-6 py-4 flex flex-col gap-4">
+            <a href="index.html" class="font-semibold" style="color: var(--color-dark-gray);">الرئيسية</a>
+            <a href="weather.html" class="font-semibold" style="color: var(--color-green);">توقعات الطقس</a>
+            <a href="trips.html" class="font-semibold" style="color: var(--color-dark-gray);">الرحلات</a>
+            <a href="premium.html" class="font-semibold" style="color: var(--color-dark-gray);">بريميوم</a>
+            <a href="contact.html" class="font-semibold" style="color: var(--color-dark-gray);">اتصل بنا</a>
+        </div>
+    </div>
+
+    <!-- NASA Dashboard -->
+    <section class="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen pt-32">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12">
+                <div class="inline-block p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
+                    <span class="text-5xl">🛰️</span>
+                </div>
+                <h2 class="text-4xl md:text-5xl font-black text-gray-800 mb-4">توقعات الطقس الذكية</h2>
+                <p class="text-xl text-gray-600">مدعومة ببيانات NASA POWER الحقيقية</p>
+            </div>
+
+            <div class="max-w-6xl mx-auto">
+                <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
+                        <h3 class="text-2xl font-bold mb-6">اختر الموقع والتاريخ</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold mb-2 text-blue-100">المكان (أو إحداثيات)</label>
+                                <input id="place" type="text" placeholder="القاهرة، الإسكندرية، أو 30.0444, 31.2357"
+                                    class="w-full px-4 py-3 rounded-xl border-2 border-white/30 bg-white/10 backdrop-blur text-white placeholder-white/60 focus:border-white focus:outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-2 text-blue-100">التاريخ المطلوب</label>
+                                <input id="date" type="date"
+                                    class="w-full px-4 py-3 rounded-xl border-2 border-white/30 bg-white/10 backdrop-blur text-white focus:border-white focus:outline-none transition">
+                            </div>
+                        </div>
+                        <button onclick="loadNASAData()"
+                            class="mt-6 w-full md:w-auto px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:shadow-2xl transform hover:scale-105 transition">
+                            تحليل البيانات من NASA
+                        </button>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">حدد الموقع على الخريطة</label>
+                            <div id="map"></div>
+                        </div>
+                    </div>
+
+                    <div id="resultsContainer" class="p-8 hidden">
+                        <div class="relative">
+                            <div id="loadingOverlay" class="loading-overlay hidden">
+                                <div class="text-center">
+                                    <div class="spinner mb-4"></div>
+                                    <p class="text-white font-semibold">جاري تحليل بيانات NASA POWER...</p>
+                                </div>
+                            </div>
+
+                            <div id="results" class="mb-6"></div>
+
+                            <div class="bg-gray-50 rounded-2xl p-6 mb-6">
+                                <h4 class="text-xl font-bold text-gray-800 mb-4">الرسم البياني التاريخي (آخر 7 أيام)</h4>
+                                <canvas id="nasaChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8 border-b border-gray-700 pb-8 mb-8">
+                <div>
+                    <a href="index.html" class="flex items-center gap-2 mb-4">
+                        <img src="https://i.postimg.cc/Y0G8B7Jy/logo.png" alt="Logo" class="w-10 h-10 object-contain">
+                        <span class="text-xl font-bold" style="color: var(--color-beige);">SaFe Safari</span>
+                    </a>
+                    <p class="text-gray-400">رحلات آمنة ومميزة لاكتشاف جمال مصر.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4" style="color: var(--color-gold);">روابط سريعة</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="index.html" class="hover:text-white transition">الرئيسية</a></li>
+                        <li><a href="weather.html" class="hover:text-white transition">توقعات الطقس</a></li>
+                        <li><a href="trips.html" class="hover:text-white transition">الرحلات</a></li>
+                        <li><a href="premium.html" class="hover:text-white transition">بريميوم</a></li>
+                        <li><a href="contact.html" class="hover:text-white transition">اتصل بنا</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4" style="color: var(--color-gold);">خدماتنا</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="trips.html" class="hover:text-white transition">حجز الرحلات</a></li>
+                        <li><a href="weather.html" class="hover:text-white transition">بيانات الطقس من ناسا</a></li>
+                        <li><a href="premium.html" class="hover:text-white transition">اشتراكات Premium</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4" style="color: var(--color-gold);">تابعنا</h4>
+                    <div class="flex gap-4 text-2xl">
+                        <a href="#" class="hover:text-blue-400 transition">📘</a>
+                        <a href="#" class="hover:text-sky-400 transition">🦋</a>
+                        <a href="#" class="hover:text-pink-600 transition">📷</a>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center text-gray-400">
+                &copy; <span id="currentYear"></span> SaFe Safari. جميع الحقوق محفوظة.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVzQXcCR742QhzQ74jlE6c7SWmcG0vF7I",
+            authDomain: "safe-safari-44beb.firebaseapp.com",
+            projectId: "safe-safari-44beb",
+            storageBucket: "safe-safari-44beb.appspot.com",
+            messagingSenderId: "1026020215603",
+            appId: "1:1026020215603:web:52e97cdb254ede492ccc46"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        let currentUser = null;
+        let map = null;
+        let marker = null;
+        let nasaChart = null;
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        firebase.auth().onAuthStateChanged((user) => {
+            currentUser = user;
+            const userInfo = document.getElementById('userInfo');
+            const signInBtn = document.getElementById('signInBtn');
+            const userName = document.getElementById('userName');
+            const userPhoto = document.getElementById('userPhoto');
+
+            if (user) {
+                signInBtn.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userInfo.classList.add('flex');
+                userName.textContent = user.displayName;
+                userPhoto.src = user.photoURL || 'https://via.placeholder.com/40';
+            } else {
+                signInBtn.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+            }
+        });
+
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            firebase.auth().signInWithPopup(provider).catch((error) => {
+                alert('فشل تسجيل الدخول: ' + error.message);
+            });
+        }
+
+        function signOut() {
+            firebase.auth().signOut();
+        }
+
+        function initMap() {
+            if (map) map.remove();
+            map = L.map('map').setView([26.8206, 30.8025], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            
+            map.on('click', function(e) {
+                if (marker) map.removeLayer(marker);
+                marker = L.marker(e.latlng).addTo(map);
+                document.getElementById('place').value = `${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+            });
+        }
+
+        // NASA POWER API Integration
+        async function loadNASAData() {
+            const place = document.getElementById('place').value;
+            const dateInput = document.getElementById('date').value;
+
+            if (!place || !dateInput) {
+                alert('الرجاء إدخال الموقع والتاريخ');
+                return;
+            }
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            resultsContainer.classList.remove('hidden');
+            loadingOverlay.classList.remove('hidden');
+
+            try {
+                let lat, lon;
+                const coords = place.split(',').map(s => s.trim());
+                
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    lat = parseFloat(coords[0]);
+                    lon = parseFloat(coords[1]);
+                } else {
+                    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`);
+                    const geoData = await geoResponse.json();
+                    
+                    if (geoData.length === 0) {
+                        throw new Error('لم يتم العثور على الموقع');
+                    }
+                    
+                    lat = parseFloat(geoData[0].lat);
+                    lon = parseFloat(geoData[0].lon);
+                }
+
+                const selectedDate = new Date(dateInput);
+                const endDate = selectedDate.toISOString().split('T')[0].replace(/-/g, '');
+                
+                const startDate = new Date(selectedDate);
+                startDate.setDate(startDate.getDate() - 7);
+                const startDateStr = startDate.toISOString().split('T')[0].replace(/-/g, '');
+
+                const nasaUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,WS2M,PRECTOTCORR&community=RE&longitude=${lon}&latitude=${lat}&start=${startDateStr}&end=${endDate}&format=JSON`;
+                
+                const nasaResponse = await fetch(nasaUrl);
+                const nasaData = await nasaResponse.json();
+
+                if (!nasaData.properties || !nasaData.properties.parameter) {
+                    throw new Error('لم يتم استرجاع البيانات من NASA');
+                }
+
+                const params = nasaData.properties.parameter;
+                const dates = Object.keys(params.T2M).sort();
+                const latestDate = dates[dates.length - 1];
+                
+                const temp = params.T2M[latestDate];
+                const humidity = params.RH2M[latestDate];
+                const wind = params.WS2M[latestDate];
+                const precip = params.PRECTOTCORR[latestDate];
+
+                let safety = 'آمن';
+                if (temp < 10 || temp > 40 || wind > 10 || precip > 10) {
+                    safety = 'متوسط';
+                }
+                if (temp < 5 || temp > 45 || wind > 15 || precip > 20) {
+                    safety = 'خطر';
+                }
+
+                loadingOverlay.classList.add('hidden');
+
                 document.getElementById('results').innerHTML = `
                     <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-4 fade-in">
-                        <div class="bg-gradient-to-br from-orange-400 to-red-500 text-white p-6 rounded-2xl text-center">
+                        <div class="bg-gradient-to-br from-orange-400 to-red-500 text-white p-6 rounded-2xl text-center transform hover:scale-105 transition-transform">
                             <div class="text-4xl mb-2">🌡️</div>
                             <div class="text-3xl font-bold">${temp.toFixed(1)}°C</div>
                             <div class="text-sm opacity-90 mt-1">درجة الحرارة</div>
                         </div>
-                        <div class="bg-gradient-to-br from-blue-400 to-cyan-500 text-white p-6 rounded-2xl text-center">
+                        
+                        <div class="bg-gradient-to-br from-blue-400 to-cyan-500 text-white p-6 rounded-2xl text-center transform hover:scale-105 transition-transform">
                             <div class="text-4xl mb-2">💧</div>
                             <div class="text-3xl font-bold">${humidity.toFixed(1)}%</div>
                             <div class="text-sm opacity-90 mt-1">الرطوبة</div>
                         </div>
-                        <div class="bg-gradient-to-br from-green-400 to-teal-500 text-white p-6 rounded-2xl text-center">
+                        
+                        <div class="bg-gradient-to-br from-green-400 to-teal-500 text-white p-6 rounded-2xl text-center transform hover:scale-105 transition-transform">
                             <div class="text-4xl mb-2">💨</div>
                             <div class="text-3xl font-bold">${wind.toFixed(1)} m/s</div>
                             <div class="text-sm opacity-90 mt-1">سرعة الرياح</div>
                         </div>
-                        <div class="bg-gradient-to-br from-indigo-400 to-blue-600 text-white p-6 rounded-2xl text-center">
+                        
+                        <div class="bg-gradient-to-br from-indigo-400 to-blue-600 text-white p-6 rounded-2xl text-center transform hover:scale-105 transition-transform">
                             <div class="text-4xl mb-2">🌧️</div>
                             <div class="text-3xl font-bold">${precip.toFixed(1)} mm</div>
                             <div class="text-sm opacity-90 mt-1">معدل الأمطار</div>
                         </div>
-                        <div class="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-6 rounded-2xl text-center">
+                        
+                        <div class="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-6 rounded-2xl text-center transform hover:scale-105 transition-transform">
                             <div class="text-4xl mb-2">${safety === 'آمن' ? '✅' : safety === 'متوسط' ? '⚠️' : '❌'}</div>
                             <div class="text-3xl font-bold">${safety}</div>
                             <div class="text-sm opacity-90 mt-1">السلامة</div>
                         </div>
                     </div>
-                    <div class="mt-4 p-4 bg-blue-50 rounded-xl">
-                        <p class="text-sm text-gray-700">📍 الموقع: ${lat.toFixed(4)}, ${lon.toFixed(4)} | 📅 البيانات من: ${latestDate}</p>
-                        <p class="text-xs text-gray-500 mt-2">المصدر: NASA POWER Project</p>
+                    
+                    <div class="mt-6 grid md:grid-cols-2 gap-4">
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span>📊</span> التحليل التفصيلي
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">حالة درجة الحرارة:</span>
+                                    <span class="font-semibold ${temp > 35 ? 'text-red-600' : temp > 25 ? 'text-orange-600' : 'text-green-600'}">
+                                        ${temp > 35 ? 'حار جداً' : temp > 25 ? 'معتدل' : 'بارد'}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">حالة الرطوبة:</span>
+                                    <span class="font-semibold ${humidity > 70 ? 'text-blue-600' : humidity > 40 ? 'text-green-600' : 'text-orange-600'}">
+                                        ${humidity > 70 ? 'رطب' : humidity > 40 ? 'معتدل' : 'جاف'}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">حالة الرياح:</span>
+                                    <span class="font-semibold ${wind > 10 ? 'text-red-600' : wind > 5 ? 'text-orange-600' : 'text-green-600'}">
+                                        ${wind > 10 ? 'عاصفة' : wind > 5 ? 'نشطة' : 'هادئة'}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">احتمالية الأمطار:</span>
+                                    <span class="font-semibold ${precip > 10 ? 'text-blue-600' : precip > 5 ? 'text-cyan-600' : 'text-gray-600'}">
+                                        ${precip > 10 ? 'عالية' : precip > 5 ? 'متوسطة' : 'منخفضة'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span>💡</span> التوصيات
+                            </h3>
+                            <ul class="space-y-2 text-sm text-gray-700">
+                                ${temp > 35 ? '<li class="flex items-start gap-2"><span>⚠️</span> <span>ارتداء ملابس خفيفة وشرب الكثير من الماء</span></li>' : ''}
+                                ${temp < 15 ? '<li class="flex items-start gap-2"><span>🧥</span> <span>ارتداء ملابس دافئة - الجو بارد</span></li>' : ''}
+                                ${humidity > 70 ? '<li class="flex items-start gap-2"><span>💧</span> <span>الرطوبة عالية - قد تشعر بالحرارة أكثر</span></li>' : ''}
+                                ${wind > 10 ? '<li class="flex items-start gap-2"><span>💨</span> <span>رياح قوية - احذر من الأشياء المتطايرة</span></li>' : ''}
+                                ${precip > 5 ? '<li class="flex items-start gap-2"><span>☔</span> <span>احتمال سقوط أمطار - خذ مظلة معك</span></li>' : ''}
+                                ${precip > 15 ? '<li class="flex items-start gap-2"><span>🌧️</span> <span>أمطار غزيرة متوقعة - تجنب القيادة إن أمكن</span></li>' : ''}
+                                ${safety === 'آمن' ? '<li class="flex items-start gap-2"><span>✅</span> <span>الظروف الجوية مناسبة للأنشطة الخارجية</span></li>' : ''}
+                                ${safety === 'خطر' ? '<li class="flex items-start gap-2"><span>❌</span> <span>يُفضل البقاء في مكان آمن</span></li>' : ''}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                        <p class="text-sm text-gray-700 flex items-center gap-2 flex-wrap">
+                            <span>📍</span> 
+                            <span>الموقع: ${lat.toFixed(4)}, ${lon.toFixed(4)}</span>
+                            <span class="mx-2">|</span>
+                            <span>📅</span>
+                            <span>البيانات من: ${latestDate}</span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                            <span>🛰️</span>
+                            <span>المصدر: NASA POWER Project</span>
+                        </p>
                     </div>
                 `;
+
+                setupChart(params, dates);
+
+            } catch (error) {
+                loadingOverlay.classList.add('hidden');
+                alert('حدث خطأ: ' + error.message);
+                console.error('NASA API Error:', error);
+            }
+        }
+
+        function setupChart(params, dates) {
+            if (nasaChart) nasaChart.destroy();
+            
+            const temps = dates.map(d => params.T2M[d]);
+            const winds = dates.map(d => params.WS2M[d]);
+            const humidity = dates.map(d => params.RH2M[d]);
+            const precip = dates.map(d => params.PRECTOTCORR[d]);
+            
+            const labels = dates.map(d => {
+                const date = new Date(d.substr(0,4), d.substr(4,2)-1, d.substr(6,2));
+                return date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+            });
+
+            const ctx = document.getElementById('nasaChart').getContext('2d');
+            nasaChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'درجة الحرارة (°C)',
+                        data: temps,
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'الرطوبة (%)',
+                        data: humidity,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'سرعة الرياح (m/s)',
+                        data: winds,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }, {
+                        label: 'الأمطار (mm)',
+                        data: precip,
+                        borderColor: 'rgb(168, 85, 247)',
+                        backgroundColor: 'rgba(168, 85, 247, 0.3)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1',
+                        type: 'bar'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Cairo',
+                                    size: 12
+                                },
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            titleFont: {
+                                family: 'Cairo',
+                                size: 14
+                            },
+                            bodyFont: {
+                                family: 'Cairo',
+                                size: 12
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'درجة الحرارة / الرطوبة',
+                                font: { 
+                                    family: 'Cairo',
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Cairo'
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'الرياح / الأمطار',
+                                font: { 
+                                    family: 'Cairo',
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Cairo'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Cairo'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+            
+            setTimeout(initMap, 500);
+        });
+    </script>
+</body>
+</html>
