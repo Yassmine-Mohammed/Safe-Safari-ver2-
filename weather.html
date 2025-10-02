@@ -1,0 +1,33 @@
+                document.getElementById('results').innerHTML = `
+                    <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-4 fade-in">
+                        <div class="bg-gradient-to-br from-orange-400 to-red-500 text-white p-6 rounded-2xl text-center">
+                            <div class="text-4xl mb-2">🌡️</div>
+                            <div class="text-3xl font-bold">${temp.toFixed(1)}°C</div>
+                            <div class="text-sm opacity-90 mt-1">درجة الحرارة</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-400 to-cyan-500 text-white p-6 rounded-2xl text-center">
+                            <div class="text-4xl mb-2">💧</div>
+                            <div class="text-3xl font-bold">${humidity.toFixed(1)}%</div>
+                            <div class="text-sm opacity-90 mt-1">الرطوبة</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-400 to-teal-500 text-white p-6 rounded-2xl text-center">
+                            <div class="text-4xl mb-2">💨</div>
+                            <div class="text-3xl font-bold">${wind.toFixed(1)} m/s</div>
+                            <div class="text-sm opacity-90 mt-1">سرعة الرياح</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-indigo-400 to-blue-600 text-white p-6 rounded-2xl text-center">
+                            <div class="text-4xl mb-2">🌧️</div>
+                            <div class="text-3xl font-bold">${precip.toFixed(1)} mm</div>
+                            <div class="text-sm opacity-90 mt-1">معدل الأمطار</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-6 rounded-2xl text-center">
+                            <div class="text-4xl mb-2">${safety === 'آمن' ? '✅' : safety === 'متوسط' ? '⚠️' : '❌'}</div>
+                            <div class="text-3xl font-bold">${safety}</div>
+                            <div class="text-sm opacity-90 mt-1">السلامة</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-blue-50 rounded-xl">
+                        <p class="text-sm text-gray-700">📍 الموقع: ${lat.toFixed(4)}, ${lon.toFixed(4)} | 📅 البيانات من: ${latestDate}</p>
+                        <p class="text-xs text-gray-500 mt-2">المصدر: NASA POWER Project</p>
+                    </div>
+                `;

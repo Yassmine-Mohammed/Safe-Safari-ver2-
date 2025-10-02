@@ -1,0 +1,28 @@
+{
+  "name": "SaFe Safari - رحلات سياحية آمنة",
+  "short_name": "SaFe Safari",
+  "description": "رحلات آمنة ومميزة مع أفضل الشركات السياحية في مصر",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#4A7C59",
+  "theme_color": "#4A7C59",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/d4ftYF1f/Whats-App-Image-2025-09-25-at-08-11-18-0042ce8a.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.ibb.co/d4ftYF1f/Whats-App-Image-2025-09-25-at-08-11-18-0042ce8a.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "tourism"],
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/"
+}
