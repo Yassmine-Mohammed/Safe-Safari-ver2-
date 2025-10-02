@@ -1,28 +1,57 @@
-{
-  "name": "SaFe Safari - رحلات سياحية آمنة",
-  "short_name": "SaFe Safari",
-  "description": "رحلات آمنة ومميزة مع أفضل الشركات السياحية في مصر",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#4A7C59",
-  "theme_color": "#4A7C59",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "https://i.ibb.co/d4ftYF1f/Whats-App-Image-2025-09-25-at-08-11-18-0042ce8a.jpg",
-      "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://i.ibb.co/d4ftYF1f/Whats-App-Image-2025-09-25-at-08-11-18-0042ce8a.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["travel", "tourism"],
-  "lang": "ar",
-  "dir": "rtl",
-  "scope": "/"
-}
+const CACHE_NAME = 'safe-safari-v2';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/weather.html',
+  '/trips.html',
+  '/premium.html',
+  '/contact.html',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
+];
+
+// التثبيت
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(ASSETS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// التفعيل
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// استرجاع البيانات
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) return response;
+        
+        return fetch(event.request).then(fetchResponse => {
+          // حفظ في الكاش للمرة القادمة
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, fetchResponse.clone());
+            return fetchResponse;
+          });
+        });
+      })
+      .catch(() => {
+        // صفحة بديلة عند عدم توفر الإنترنت
+        if (event.request.destination === 'document') {
+          return caches.match('/offline.html');
+        }
+      })
+  );
+});
