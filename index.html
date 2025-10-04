@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 
 <head>
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4A7C59">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -154,7 +155,244 @@
             }
         }
     </style>
+    <style>
+        .survey-step {
+            display: none;
+        }
+
+        .survey-step.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .interest-btn {
+            transition: all 0.3s;
+        }
+
+        .interest-btn.selected {
+            background: var(--color-green) !important;
+            color: white !important;
+            transform: scale(1.05);
+            border-color: var(--color-green) !important;
+        }
+    </style>
 </head>
+<!-- Language Switcher Button -->
+<div class="fixed top-20 left-4 z-[60]">
+    <button onclick="toggleLanguage()"
+        class="px-4 py-2 bg-white rounded-full shadow-lg font-bold flex items-center gap-2 hover:bg-gray-50 transition">
+        <span>🌐</span>
+        <span id="langText">English</span>
+    </button>
+</div>
+
+<!-- Survey Modal -->
+<div id="surveyModal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4"
+    style="display: none;">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-gradient-to-r from-green-600 to-blue-600 p-8 text-white text-center">
+            <div class="text-6xl mb-4">🎯</div>
+            <h2 class="text-3xl font-black mb-2" data-ar="اكتشف رحلتك المثالية" data-en="Discover Your Perfect Trip">
+                اكتشف رحلتك المثالية</h2>
+            <p class="text-lg" data-ar="أجب على بعض الأسئلة البسيطة لنقترح عليك أفضل الرحلات"
+                data-en="Answer a few simple questions to get the best trip recommendations">أجب على بعض الأسئلة البسيطة
+                لنقترح عليك أفضل الرحلات</p>
+        </div>
+
+        <div class="px-8 pt-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-semibold text-gray-600"><span data-ar="الخطوة" data-en="Step">الخطوة</span>
+                    <span id="currentStep">1</span> <span data-ar="من" data-en="of">من</span> 5</span>
+                <span class="text-sm font-semibold text-green-600"><span id="progressPercent">20</span>%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300"
+                    style="width: 20%"></div>
+            </div>
+        </div>
+        <!-- Reset Survey Button (يظهر فقط لمن أكمل الاستبيان) -->
+        <div id="resetSurveyBtn" class="fixed top-36 left-4 z-[60]" style="display: none;">
+            <button onclick="resetSurvey()"
+                class="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg font-bold flex items-center gap-2 hover:from-purple-600 hover:to-pink-600 transition">
+                <span>🔄</span>
+                <span data-ar="إعادة الاستبيان" data-en="Retake Survey">إعادة الاستبيان</span>
+            </button>
+        </div>
+        <div class="p-8">
+            <!-- Step 1: Age -->
+            <div class="survey-step active" data-step="1">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800" data-ar="ما هو عمرك؟" data-en="What is your age?">ما
+                    هو عمرك؟</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="selectAge('18-30')"
+                        class="age-btn p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-center">
+                        <div class="text-4xl mb-2">🎓</div>
+                        <div class="font-bold" data-ar="18-30 سنة" data-en="18-30 years">18-30 سنة</div>
+                    </button>
+                    <button onclick="selectAge('31-45')"
+                        class="age-btn p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-center">
+                        <div class="text-4xl mb-2">💼</div>
+                        <div class="font-bold" data-ar="31-45 سنة" data-en="31-45 years">31-45 سنة</div>
+                    </button>
+                    <button onclick="selectAge('46-60')"
+                        class="age-btn p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-center">
+                        <div class="text-4xl mb-2">👔</div>
+                        <div class="font-bold" data-ar="46-60 سنة" data-en="46-60 years">46-60 سنة</div>
+                    </button>
+                    <button onclick="selectAge('60+')"
+                        class="age-btn p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-center">
+                        <div class="text-4xl mb-2">🎩</div>
+                        <div class="font-bold" data-ar="60+ سنة" data-en="60+ years">60+ سنة</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Interests -->
+            <div class="survey-step" data-step="2">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800" data-ar="ما هي اهتماماتك؟ (اختر كل ما يناسبك)"
+                    data-en="What are your interests? (Select all that apply)">ما هي اهتماماتك؟</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <button onclick="toggleInterest('adventure')"
+                        class="interest-btn p-4 border-2 border-gray-300 rounded-xl text-center">
+                        <div class="text-3xl mb-1">🏔️</div>
+                        <div class="text-sm font-semibold" data-ar="مغامرة" data-en="Adventure">مغامرة</div>
+                    </button>
+                    <button onclick="toggleInterest('history')"
+                        class="interest-btn p-4 border-2 border-gray-300 rounded-xl text-center">
+                        <div class="text-3xl mb-1">🏛️</div>
+                        <div class="text-sm font-semibold" data-ar="تاريخ" data-en="History">تاريخ</div>
+                    </button>
+                    <button onclick="toggleInterest('beach')"
+                        class="interest-btn p-4 border-2 border-gray-300 rounded-xl text-center">
+                        <div class="text-3xl mb-1">🏖️</div>
+                        <div class="text-sm font-semibold" data-ar="شاطئ" data-en="Beach">شاطئ</div>
+                    </button>
+                    <button onclick="toggleInterest('nature')"
+                        class="interest-btn p-4 border-2 border-gray-300 rounded-xl text-center">
+                        <div class="text-3xl mb-1">🌿</div>
+                        <div class="text-sm font-semibold" data-ar="طبيعة" data-en="Nature">طبيعة</div>
+                    </button>
+                    <button onclick="toggleInterest('culture')"
+                        class="interest-btn p-4 border-2 border-gray-300 rounded-xl text-center">
+                        <div class="text-3xl mb-1">🎭</div>
+                        <div class="text-sm font-semibold" data-ar="ثقافة" data-en="Culture">ثقافة</div>
+                    </button>
+                    <button onclick="toggleInterest('relaxation')"
+                        class="interest-btn p-4 border-2 border-gray-300 rounded-xl text-center">
+                        <div class="text-3xl mb-1">🧘</div>
+                        <div class="text-sm font-semibold" data-ar="استرخاء" data-en="Relaxation">استرخاء</div>
+                    </button>
+                </div>
+                <button onclick="nextStep()"
+                    class="mt-6 w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition"
+                    data-ar="التالي" data-en="Next">التالي</button>
+            </div>
+
+            <!-- Step 3: Trip Type -->
+            <div class="survey-step" data-step="3">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800" data-ar="ما نوع الرحلة المفضلة؟"
+                    data-en="What type of trip do you prefer?">ما نوع الرحلة المفضلة؟</h3>
+                <div class="space-y-4">
+                    <button onclick="selectTripType('صحراوية')"
+                        class="trip-type-btn w-full p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-right flex items-center gap-4">
+                        <div class="text-5xl">🏜️</div>
+                        <div>
+                            <div class="font-bold text-lg" data-ar="رحلات صحراوية" data-en="Desert Trips">رحلات صحراوية
+                            </div>
+                            <div class="text-sm text-gray-600" data-ar="سفاري وتخييم في الصحراء"
+                                data-en="Safari and desert camping">سفاري وتخييم في الصحراء</div>
+                        </div>
+                    </button>
+                    <button onclick="selectTripType('بحرية')"
+                        class="trip-type-btn w-full p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-right flex items-center gap-4">
+                        <div class="text-5xl">🌊</div>
+                        <div>
+                            <div class="font-bold text-lg" data-ar="رحلات بحرية" data-en="Sea Trips">رحلات بحرية</div>
+                            <div class="text-sm text-gray-600" data-ar="غوص وكروز وشواطئ"
+                                data-en="Diving, cruises and beaches">غوص وكروز وشواطئ</div>
+                        </div>
+                    </button>
+                    <button onclick="selectTripType('أثرية')"
+                        class="trip-type-btn w-full p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-right flex items-center gap-4">
+                        <div class="text-5xl">🏺</div>
+                        <div>
+                            <div class="font-bold text-lg" data-ar="رحلات أثرية" data-en="Historical Trips">رحلات أثرية
+                            </div>
+                            <div class="text-sm text-gray-600" data-ar="معابد ومتاحف وآثار"
+                                data-en="Temples, museums and monuments">معابد ومتاحف وآثار</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Children -->
+            <div class="survey-step" data-step="4">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800" data-ar="هل لديك أطفال سيرافقونك؟"
+                    data-en="Will you be traveling with children?">هل لديك أطفال سيرافقونك؟</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="selectChildren('yes')"
+                        class="children-btn p-8 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-center">
+                        <div class="text-6xl mb-3">👨‍👩‍👧‍👦</div>
+                        <div class="font-bold text-lg" data-ar="نعم" data-en="Yes">نعم</div>
+                        <div class="text-sm text-gray-600 mt-2" data-ar="رحلة عائلية" data-en="Family trip">رحلة عائلية
+                        </div>
+                    </button>
+                    <button onclick="selectChildren('no')"
+                        class="children-btn p-8 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-center">
+                        <div class="text-6xl mb-3">👥</div>
+                        <div class="font-bold text-lg" data-ar="لا" data-en="No">لا</div>
+                        <div class="text-sm text-gray-600 mt-2" data-ar="رحلة للبالغين" data-en="Adults only">رحلة
+                            للبالغين</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 5: Budget -->
+            <div class="survey-step" data-step="5">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800" data-ar="ما هي ميزانيتك المتوقعة؟"
+                    data-en="What is your expected budget?">ما هي ميزانيتك المتوقعة؟</h3>
+                <div class="space-y-4">
+                    <button onclick="selectBudget('low')"
+                        class="budget-btn w-full p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-right flex items-center gap-4">
+                        <div class="text-5xl">💰</div>
+                        <div>
+                            <div class="font-bold text-lg" data-ar="اقتصادية" data-en="Budget">اقتصادية</div>
+                            <div class="text-sm text-gray-600" data-ar="أقل من 4000 جنيه" data-en="Less than 4000 EGP">
+                                أقل من 4000 جنيه</div>
+                        </div>
+                    </button>
+                    <button onclick="selectBudget('medium')"
+                        class="budget-btn w-full p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-right flex items-center gap-4">
+                        <div class="text-5xl">💵</div>
+                        <div>
+                            <div class="font-bold text-lg" data-ar="متوسطة" data-en="Medium">متوسطة</div>
+                            <div class="text-sm text-gray-600" data-ar="4000 - 7000 جنيه" data-en="4000 - 7000 EGP">4000
+                                - 7000 جنيه</div>
+                        </div>
+                    </button>
+                    <button onclick="selectBudget('high')"
+                        class="budget-btn w-full p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 transition text-right flex items-center gap-4">
+                        <div class="text-5xl">💎</div>
+                        <div>
+                            <div class="font-bold text-lg" data-ar="فاخرة" data-en="Luxury">فاخرة</div>
+                            <div class="text-sm text-gray-600" data-ar="أكثر من 7000 جنيه" data-en="More than 7000 EGP">
+                                أكثر من 7000 جنيه</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-8 pb-8 flex gap-4">
+            <button onclick="skipSurvey()"
+                class="flex-1 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition"
+                data-ar="تخطي" data-en="Skip">تخطي</button>
+            <button id="prevBtn" onclick="prevStep()"
+                class="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition"
+                style="display: none;" data-ar="السابق" data-en="Previous">السابق</button>
+        </div>
+    </div>
+</div>
 
 <body>
     <!-- Navigation -->
@@ -1566,44 +1804,274 @@
                 });
             });
         });
+        function resetSurvey() {
+            const confirmReset = confirm(
+                currentLanguage === 'ar'
+                    ? 'هل تريد حقاً إعادة الاستبيان؟ سيتم حذف إجاباتك السابقة.'
+                    : 'Do you really want to retake the survey? Your previous answers will be deleted.'
+            );
 
+            if (confirmReset) {
+                localStorage.removeItem('surveyCompleted');
+                localStorage.removeItem('surveyData');
+
+                // Reset survey to step 1
+                currentSurveyStep = 1;
+                surveyData = { age: null, interests: [], tripType: null, children: null, budget: null };
+
+                // Reset all steps
+                document.querySelectorAll('.survey-step').forEach(step => step.classList.remove('active'));
+                document.querySelector('[data-step="1"]').classList.add('active');
+
+                // Reset buttons selection
+                document.querySelectorAll('.interest-btn.selected').forEach(btn => btn.classList.remove('selected'));
+
+                // Reset progress bar
+                updateProgress();
+                document.getElementById('prevBtn').style.display = 'none';
+
+                // Show survey modal
+                document.getElementById('surveyModal').style.display = 'flex';
+
+                // Hide reset button
+                document.getElementById('resetSurveyBtn').style.display = 'none';
+            }
+        }
+
+        function checkSurveyStatus() {
+            const surveyCompleted = localStorage.getItem('surveyCompleted');
+            const resetBtn = document.getElementById('resetSurveyBtn');
+
+            if (surveyCompleted && resetBtn) {
+                resetBtn.style.display = 'block';
+            }
+        }
         window.addEventListener('load', () => {
             if (!map) {
                 setTimeout(initMap, 500);
             }
         });
     </script>
-   <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('✅ PWA جاهز!', reg))
-      .catch(err => console.error('❌ خطأ:', err));
-  });
-}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('✅ PWA جاهز!', reg))
+                    .catch(err => console.error('❌ خطأ:', err));
+            });
+        }
 
-// زر التثبيت
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  // إظهار رسالة للمستخدم
-  const installBtn = document.createElement('button');
-  installBtn.textContent = '📱 ثبت التطبيق';
-  installBtn.className = 'fixed bottom-4 left-4 px-6 py-3 bg-green-600 text-white rounded-full shadow-2xl z-50 font-bold';
-  installBtn.onclick = () => {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((result) => {
-      if (result.outcome === 'accepted') {
-        console.log('تم التثبيت!');
-      }
-      installBtn.remove();
-    });
-  };
-  document.body.appendChild(installBtn);
-});
-</script>
+        // زر التثبيت
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+
+            // إظهار رسالة للمستخدم
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📱 ثبت التطبيق';
+            installBtn.className = 'fixed bottom-4 left-4 px-6 py-3 bg-green-600 text-white rounded-full shadow-2xl z-50 font-bold';
+            installBtn.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        console.log('تم التثبيت!');
+                    }
+                    installBtn.remove();
+                });
+            };
+            document.body.appendChild(installBtn);
+        });
+    </script>
+
+    <script>
+        // Translation & Survey System
+        let currentLanguage = localStorage.getItem('language') || 'ar';
+        let surveyData = { age: null, interests: [], tripType: null, children: null, budget: null };
+        let currentSurveyStep = 1;
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'ar' ? 'en' : 'ar';
+            localStorage.setItem('language', currentLanguage);
+            document.documentElement.lang = currentLanguage;
+            document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+            document.getElementById('langText').textContent = currentLanguage === 'ar' ? 'English' : 'العربية';
+
+            document.querySelectorAll('[data-ar][data-en]').forEach(el => {
+                el.textContent = el.getAttribute(`data-${currentLanguage}`);
+            });
+        }
+
+        function showSurvey() {
+            if (!localStorage.getItem('surveyCompleted')) {
+                document.getElementById('surveyModal').style.display = 'flex';
+            }
+        }
+
+        function selectAge(age) {
+            surveyData.age = age;
+            nextStep();
+        }
+
+        function toggleInterest(interest) {
+            const btn = event.target.closest('.interest-btn');
+            btn.classList.toggle('selected');
+            const idx = surveyData.interests.indexOf(interest);
+            if (idx > -1) surveyData.interests.splice(idx, 1);
+            else surveyData.interests.push(interest);
+        }
+
+        function selectTripType(type) {
+            surveyData.tripType = type;
+            nextStep();
+        }
+
+        function selectChildren(hasChildren) {
+            surveyData.children = hasChildren === 'yes';
+            nextStep();
+        }
+
+        function selectBudget(budget) {
+            surveyData.budget = budget;
+            completeSurvey();
+        }
+
+        function nextStep() {
+            if (currentSurveyStep < 5) {
+                document.querySelector(`[data-step="${currentSurveyStep}"]`).classList.remove('active');
+                currentSurveyStep++;
+                document.querySelector(`[data-step="${currentSurveyStep}"]`).classList.add('active');
+                updateProgress();
+                document.getElementById('prevBtn').style.display = 'block';
+            }
+        }
+
+        function prevStep() {
+            if (currentSurveyStep > 1) {
+                document.querySelector(`[data-step="${currentSurveyStep}"]`).classList.remove('active');
+                currentSurveyStep--;
+                document.querySelector(`[data-step="${currentSurveyStep}"]`).classList.add('active');
+                updateProgress();
+                if (currentSurveyStep === 1) document.getElementById('prevBtn').style.display = 'none';
+            }
+        }
+
+        function updateProgress() {
+            const percent = (currentSurveyStep / 5) * 100;
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('currentStep').textContent = currentSurveyStep;
+            document.getElementById('progressPercent').textContent = Math.round(percent);
+        }
+
+        function skipSurvey() {
+            localStorage.setItem('surveyCompleted', 'skipped');
+            document.getElementById('surveyModal').style.display = 'none';
+            checkSurveyStatus();
+        }
+
+        function completeSurvey() {
+            localStorage.setItem('surveyCompleted', 'true');
+            localStorage.setItem('surveyData', JSON.stringify(surveyData));
+            document.getElementById('surveyModal').style.display = 'none';
+            checkSurveyStatus();
+
+            if (typeof displayRecommendedTrip === 'function') {
+                displayRecommendedTrip();
+            }
+        }
+        window.addEventListener('load', () => {
+            toggleLanguage(); // Apply saved language
+            setTimeout(showSurvey, 2000); // Show survey after 2 seconds
+            checkSurveyStatus(); // أضف هذا السطر لإظهار زر الإعادة
+        });
+        // Modify existing displayRecommendedTrip function
+        const originalDisplayRecommendedTrip = window.displayRecommendedTrip;
+        window.displayRecommendedTrip = function () {
+            const savedData = localStorage.getItem('surveyData');
+            if (!savedData) {
+                return originalDisplayRecommendedTrip ? originalDisplayRecommendedTrip() : null;
+            }
+
+            const data = JSON.parse(savedData);
+            const container = document.getElementById('recommendedTripContainer');
+            if (!container) return;
+
+            // Smart recommendation based on survey
+            let recommendedTrip = null;
+            const filteredTrips = tripsData.filter(trip => {
+                if (data.tripType && trip.category !== data.tripType) return false;
+                if (data.budget === 'low' && trip.price > 4000) return false;
+                if (data.budget === 'medium' && (trip.price < 4000 || trip.price > 7000)) return false;
+                if (data.budget === 'high' && trip.price < 7000) return false;
+                return true;
+            });
+
+            recommendedTrip = filteredTrips.length > 0 ? filteredTrips[0] : tripsData[0];
+            const discount = data.children ? 10 : 0;
+            const finalPrice = recommendedTrip.price - (recommendedTrip.price * discount / 100);
+
+            const isPremium = currentUser && currentUser.email;
+
+            if (!isPremium) {
+                // Show premium upgrade message (keep original design)
+                if (originalDisplayRecommendedTrip) originalDisplayRecommendedTrip();
+                return;
+            }
+
+            // Show personalized recommendation
+            container.innerHTML = `
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center">
+                <div class="text-4xl mb-2">🎯</div>
+                <h3 class="text-2xl font-bold" data-ar="رحلة مختارة خصيصاً لك" data-en="Specially Selected For You">رحلة مختارة خصيصاً لك</h3>
+                <p class="text-sm mt-2 opacity-90" data-ar="بناءً على اهتماماتك: ${data.interests.join('، ')}" data-en="Based on your interests: ${data.interests.join(', ')}">بناءً على اهتماماتك: ${data.interests.join('، ')}</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-0">
+                <div class="relative h-96 md:h-auto">
+                    <img src="${recommendedTrip.image}" alt="${recommendedTrip.title}" class="w-full h-full object-cover">
+                    <div class="absolute top-4 right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-bold text-lg shadow-lg">
+                        ${discount > 0 ? `${discount}% خصم عائلي` : 'مثالي لك'}
+                    </div>
+                </div>
+                <div class="p-8">
+                    <h4 class="text-3xl font-black mb-4" style="color: var(--color-dark-gray);">${recommendedTrip.title}</h4>
+                    <p class="text-gray-600 mb-6">${recommendedTrip.description}</p>
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-xl">
+                            <div class="text-2xl mb-1">📅</div>
+                            <div class="font-bold text-gray-800" data-ar="المدة" data-en="Duration">المدة</div>
+                            <div class="text-sm text-gray-600">${recommendedTrip.duration}</div>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-xl">
+                            <div class="text-2xl mb-1">📍</div>
+                            <div class="font-bold text-gray-800" data-ar="الموقع" data-en="Location">الموقع</div>
+                            <div class="text-sm text-gray-600">${recommendedTrip.location}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between border-t pt-6">
+                        <div>
+                            <p class="text-sm text-gray-500" data-ar="السعر" data-en="Price">السعر</p>
+                            <p class="text-3xl font-black" style="color: var(--color-green);">${finalPrice} <span class="text-lg" data-ar="جنيه" data-en="EGP">جنيه</span></p>
+                            ${discount > 0 ? `<p class="text-sm text-green-600 font-bold">وفرت ${recommendedTrip.price - finalPrice} جنيه!</p>` : ''}
+                        </div>
+                        <button onclick="openModal(${recommendedTrip.id})" class="px-8 py-4 btn-primary text-white font-bold rounded-xl hover:shadow-xl transition" data-ar="احجز الآن" data-en="Book Now">احجز الآن</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+            // Apply current language
+            toggleLanguage();
+            toggleLanguage();
+        };
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            toggleLanguage(); // Apply saved language
+            setTimeout(showSurvey, 2000); // Show survey after 2 seconds
+        });
+    </script>
 </body>
 
 </html>
